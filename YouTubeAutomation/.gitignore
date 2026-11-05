@@ -1,0 +1,17 @@
+# Secrets
+.env
+client_secret.json
+*.token
+
+# OAuth tokens
+YouTube.Token.Store/
+
+# Build files
+bin/
+obj/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
