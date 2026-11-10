@@ -15,17 +15,22 @@ public class ShortsFetcher
         int targetCount = 60,
         string region = "IN",
         string language = "en",
-        int minDurationSeconds = 30,
-        int maxDurationSeconds = 50)
+        DateTimeOffset? publishedAfter = null,
+        DateTimeOffset? publishedBefore = null,
+        string license = "any",
+        string query = "")
     {
         var search = youtube.Search.List("id");
-        search.Q = "#shorts";
+        search.Q = string.IsNullOrWhiteSpace(query) ? "#shorts" : query.Trim();
         search.Type = "video";
         search.Order = SearchResource.ListRequest.OrderEnum.ViewCount;
         search.VideoCategoryId = EntertainmentCategoryId;
-        search.VideoLicense =
-            SearchResource.ListRequest.VideoLicenseEnum.CreativeCommon;
-        search.PublishedAfterDateTimeOffset = DateTimeOffset.UtcNow.AddDays(-30);
+        if (string.Equals(license, "creativeCommon", StringComparison.OrdinalIgnoreCase))
+            search.VideoLicense = SearchResource.ListRequest.VideoLicenseEnum.CreativeCommon;
+        else if (string.Equals(license, "youtube", StringComparison.OrdinalIgnoreCase))
+            search.VideoLicense = SearchResource.ListRequest.VideoLicenseEnum.Youtube;
+        search.PublishedAfterDateTimeOffset = publishedAfter;
+        search.PublishedBeforeDateTimeOffset = publishedBefore;
         search.VideoDuration =
             SearchResource.ListRequest.VideoDurationEnum.Short__;
         search.RegionCode = string.IsNullOrWhiteSpace(region)
@@ -40,7 +45,6 @@ public class ShortsFetcher
         var seenIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         string? pageToken = null;
         int pageCount = 0;
-        int durationRejected = 0;
         int categoryRejected = 0;
 
         while (pageCount < MaxSearchPages && videos.Count < targetCount)
@@ -80,12 +84,6 @@ public class ShortsFetcher
                         .ToTimeSpan(video.ContentDetails.Duration)
                         .TotalSeconds;
 
-                    if (duration < minDurationSeconds || duration > maxDurationSeconds)
-                    {
-                        durationRejected++;
-                        continue;
-                    }
-
                     DateTime publishedAt =
                         video.Snippet.PublishedAtDateTimeOffset?
                             .UtcDateTime ?? DateTime.UtcNow;
@@ -107,6 +105,7 @@ public class ShortsFetcher
                         Comments = comments,
                         PublishedAt = publishedAt,
                         DurationSeconds = duration,
+                        License = video.Snippet.License ?? "unknown",
                         ViewsPerHour = views / hours,
                         Url = "https://www.youtube.com/watch?v=" + video.Id
                     });
@@ -121,9 +120,8 @@ public class ShortsFetcher
         }
 
         Console.WriteLine($"Search pages fetched: {pageCount}");
-        Console.WriteLine("Rejected by duration: " + durationRejected);
         Console.WriteLine("Rejected by category: " + categoryRejected);
-        Console.WriteLine("Matching 30-50 seconds: " + videos.Count);
+        Console.WriteLine("Returned before local metadata filters: " + videos.Count);
 
         return videos;
     }

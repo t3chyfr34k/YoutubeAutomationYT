@@ -16,3 +16,9 @@ obj/
 *.user
 *.suo
 
+# Temporary browser capture profile
+docs/edge-profile/
+docs/screenshots/wildframe-desktop.png
+docs/screenshots/wildframe-desktop-4k.png
+docs/screenshots/wildframe-walkthrough.webm
+

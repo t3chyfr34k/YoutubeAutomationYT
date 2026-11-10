@@ -19,6 +19,8 @@ public class VideoModel
 
     public double DurationSeconds { get; set; }
 
+    public string License { get; set; } = "unknown";
+
     public double ViewsPerHour { get; set; }
 
     public double ViralScore { get; set; }

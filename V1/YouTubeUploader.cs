@@ -11,7 +11,8 @@ public class YouTubeUploader
     public static async Task<string> UploadVideoAsync(
         YouTubeService youtube,
         string videoPath,
-        GeneratedMetadata metadata)
+        GeneratedMetadata metadata,
+        string visibility = "private")
     {
         if (!File.Exists(videoPath))
         {
@@ -42,7 +43,7 @@ public class YouTubeUploader
 
             Status = new VideoStatus
             {
-                PrivacyStatus = "public"
+                PrivacyStatus = visibility
             }
         };
 
