@@ -82,7 +82,9 @@ app.MapPost("/api/youtube/connect", async (AutomationWorkflow workflow, Cancella
 
 app.MapPost("/api/provider/configure", async (ProviderConfigRequest request, IHttpClientFactory clients, CancellationToken ct) =>
 {
-    if (string.IsNullOrWhiteSpace(request.ApiKey) || string.IsNullOrWhiteSpace(request.BaseUrl) || string.IsNullOrWhiteSpace(request.Model))
+    var prior = await AppFiles.ReadProviderAsync();
+    var apiKey = string.IsNullOrWhiteSpace(request.ApiKey) ? prior.ApiKey : request.ApiKey;
+    if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(request.BaseUrl) || string.IsNullOrWhiteSpace(request.Model))
         return Results.BadRequest(new { message = "Provider, base URL, model, and API key are required." });
     if (!Uri.TryCreate(request.BaseUrl.TrimEnd('/'), UriKind.Absolute, out var uri) || (uri.Scheme != "https" && uri.Host != "127.0.0.1" && uri.Host != "localhost"))
         return Results.BadRequest(new { message = "Enter a valid HTTPS provider URL (or a localhost URL for a local provider)." });
@@ -90,7 +92,7 @@ app.MapPost("/api/provider/configure", async (ProviderConfigRequest request, IHt
     {
         using var http = clients.CreateClient();
         using var message = new HttpRequestMessage(HttpMethod.Post, request.BaseUrl.TrimEnd('/') + "/chat/completions");
-        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", request.ApiKey);
+        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         message.Content = new StringContent(JsonSerializer.Serialize(new
         {
             model = request.Model,
@@ -100,7 +102,7 @@ app.MapPost("/api/provider/configure", async (ProviderConfigRequest request, IHt
         using var response = await http.SendAsync(message, ct);
         if (!response.IsSuccessStatusCode)
             return Results.BadRequest(new { message = $"Provider validation failed (HTTP {(int)response.StatusCode}). Check the URL, model, and key." });
-        await AppFiles.WriteProviderAsync(new ProviderSettings(request.Provider, request.BaseUrl.TrimEnd('/'), request.Model, request.ApiKey));
+        await AppFiles.WriteProviderAsync(new ProviderSettings(request.Provider, request.BaseUrl.TrimEnd('/'), request.Model, apiKey));
         return Results.Ok(new { success = true, configured = true, provider = request.Provider, baseUrl = request.BaseUrl.TrimEnd('/'), model = request.Model });
     }
     catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
