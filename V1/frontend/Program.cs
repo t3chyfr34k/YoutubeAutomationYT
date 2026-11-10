@@ -27,8 +27,7 @@ app.MapGet("/api/status", (AutomationWorkflow workflow) => Results.Ok(new
     groqConfigured = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GROQ_API_KEY"))
         && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GROQ_BASE_URL"))
         && !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("GROQ_MODEL")),
-    youtubeCredentialsFound = File.Exists(Path.Combine(appDirectory,
-        "client_secret.json"))
+    youtubeCredentialsFound = File.Exists(Environment.GetEnvironmentVariable("YOUTUBE_CLIENT_SECRET_PATH"))
 }));
 
 app.MapPost("/api/candidates", async (CandidateRequest? request, AutomationWorkflow workflow, CancellationToken ct) =>

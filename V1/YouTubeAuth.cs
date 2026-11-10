@@ -11,8 +11,14 @@ public class YouTubeAuth
 {
     public static async Task<YouTubeService> Authenticate()
     {
+        var clientSecretPath = Environment.GetEnvironmentVariable("YOUTUBE_CLIENT_SECRET_PATH");
+        if (string.IsNullOrWhiteSpace(clientSecretPath))
+            throw new InvalidOperationException("YOUTUBE_CLIENT_SECRET_PATH is not set in .env.");
+        if (!File.Exists(clientSecretPath))
+            throw new FileNotFoundException("YouTube OAuth client secret file was not found.", clientSecretPath);
+
         var secrets = GoogleClientSecrets
-            .FromFile("client_secret.json").Secrets;
+            .FromFile(clientSecretPath).Secrets;
 
         var scopes = new[]
         {
